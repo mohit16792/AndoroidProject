@@ -1,8 +1,12 @@
 package com.programmingworld.mak.roomdatabasejetpack;
 
+import android.arch.persistence.db.SupportSQLiteDatabase;
 import android.arch.persistence.room.Room;
+import android.arch.persistence.room.RoomDatabase;
 import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
@@ -12,6 +16,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
@@ -42,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
         FloatingActionButton fab = findViewById(R.id.fab);
         getSupportActionBar().setTitle(" Contacts Manager ");
         recyclerView = findViewById(R.id.recycler_view_contacts);
-        contactsAppDatabase= Room.databaseBuilder(getApplicationContext(),ContactAppDataBase.class,"ContactDB").allowMainThreadQueries().build();
+        contactsAppDatabase= Room.databaseBuilder(getApplicationContext(),ContactAppDataBase.class,"ContactDB").allowMainThreadQueries().addCallback(callback).build();
 
         contactArrayList.addAll(contactsAppDatabase.getContactDAO().getContacts());
 
@@ -130,13 +135,23 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void createContact(String name, String email) {
-      long id= contactsAppDatabase.getContactDAO().addContact(new Contact(0,name,email));
-      Contact contact=contactsAppDatabase.getContactDAO().getContact(id);
-      if(contact!=null){
-          contactArrayList.add(0,contact);
-      }
-      contactsAdapter.notifyDataSetChanged();
+    private void createContact(final String name, final String email) {
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                long id= contactsAppDatabase.getContactDAO().addContact(new Contact(0,name,email));
+                Contact contact=contactsAppDatabase.getContactDAO().getContact(id);
+                if(contact!=null){
+                    contactArrayList.add(0,contact);
+                }
+
+                contactsAdapter.notifyDataSetChanged();
+
+            }
+        });
+
+
+
     }
     private void deleteContact(Contact contact, int position) {
 
@@ -178,4 +193,23 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+    RoomDatabase.Callback callback=new RoomDatabase.Callback() {
+        @Override
+        public void onCreate(@NonNull SupportSQLiteDatabase db) {
+            super.onCreate(db);
+            Log.e("MainActivity","RoomDatabase onCreate");
+            createContact("mohit","mohitpant9@gmail.com");
+            createContact("mak","makpant9@gmail.com");
+            createContact("mohit9","9mohitpant9@gmail.com");
+            createContact("mohit167","mohit16792@gmail.com");
+        }
+
+        @Override
+        public void onOpen(@NonNull SupportSQLiteDatabase db) {
+            super.onOpen(db);
+            Log.e("MainActivity","RoomDatabase onCreate");
+        }
+    };
+
 }
